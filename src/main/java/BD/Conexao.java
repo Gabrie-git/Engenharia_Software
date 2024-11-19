@@ -36,7 +36,7 @@ public class Conexao {
             try {
                 conexao.close();
                 conexao = null;
-                System.out.println("Conexão fechada com sucesso.");
+                System.out.println("Conexão Finalizada com sucesso.");
             } catch (SQLException ex) {
                 System.out.println("Ocorreu um erro ao fechar a conexão: " + ex.getMessage());
                 ex.printStackTrace();
