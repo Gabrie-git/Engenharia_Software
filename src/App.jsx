@@ -4,18 +4,28 @@ import "./App.css";
 function App() {
   const [tasks, setTasks] = useState([]);
   const [filter, setFilter] = useState("Todos");
-  const [selectedTask, setSelectedTask] = useState(null); // Estado para armazenar a tarefa selecionada
+  const [selectedTask, setSelectedTask] = useState(null);
 
+  // Adicionar uma nova tarefa
   const addTask = (task) => {
-    setTasks([...tasks, task]);
+    setTasks((prevTasks) => [...prevTasks, task]);
   };
 
+  // Excluir uma tarefa
+  const deleteTask = (taskId) => {
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+    if (selectedTask?.id === taskId) setSelectedTask(null); // Limpar seleção se a tarefa excluída for a selecionada
+  };
 
+  // Atualizar uma tarefa
   const updateTask = (updatedTask) => {
-    setTasks(tasks.map(task => task.title === updatedTask.title ? updatedTask : task));
-    setSelectedTask(updatedTask); // Atualiza a tarefa selecionada
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+    );
+    setSelectedTask(null); // Fechar edição após atualizar
   };
 
+  // Filtrar tarefas
   const filteredTasks = tasks.filter((task) =>
     filter === "Todos" ? true : task.status === filter
   );
@@ -32,46 +42,31 @@ function App() {
             setFilter={setFilter}
             tasks={filteredTasks}
             onDeleteTask={deleteTask}
-            onSelectTask={setSelectedTask} // Passar a função para selecionar tarefa
+            onSelectTask={setSelectedTask}
           />
           <AddTaskForm onAddTask={addTask} />
         </div>
       </main>
-      {/* Modal ou Caixa de Visualização de Tarefa */}
       {selectedTask && (
-        <div className="task-detail-modal">
-          <div className="task-detail-content">
-            <h2>Detalhes da Tarefa</h2>
-            <h3>{selectedTask.title}</h3>
-            <p><strong>Descrição:</strong> {selectedTask.description}</p>
-            <p><strong>Status:</strong> {selectedTask.status}</p>
-            <p><strong>Data de Vencimento:</strong> {selectedTask.dueDate}</p>
-            <button onClick={() => setSelectedTask(null)}>Fechar</button>
-            
-            {/* Ícone de lápis para editar */}
-            <button className="edit-button" onClick={() => setSelectedTask({...selectedTask, isEditing: true})}>
-              ✏ Editar
-            </button>
-          </div>
-          
-          {/* Caixa de edição de tarefa */}
-          {selectedTask.isEditing && (
-            <EditTaskForm
-              task={selectedTask}
-              onSave={updateTask}
-              onCancel={() => setSelectedTask({ ...selectedTask, isEditing: false })}
-            />
-          )}
-        </div>
+        <TaskDetailModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onUpdateTask={updateTask}
+        />
       )}
     </div>
   );
 }
 
-function TaskFilterAndList({ filter, setFilter, tasks, onDeleteTask, onSelectTask }) {
+function TaskFilterAndList({
+  filter,
+  setFilter,
+  tasks,
+  onDeleteTask,
+  onSelectTask,
+}) {
   return (
     <div className="task-filter-list">
-      {/* Seção de filtro */}
       <div className="task-filter">
         <h2>Filtrar Tarefas</h2>
         <select value={filter} onChange={(e) => setFilter(e.target.value)}>
@@ -81,29 +76,28 @@ function TaskFilterAndList({ filter, setFilter, tasks, onDeleteTask, onSelectTas
           <option value="Concluído">Concluído</option>
         </select>
       </div>
-
-      {/* Seção de tarefas */}
       <div className="task-list">
         <h2>Suas Tarefas</h2>
         {tasks.length === 0 ? (
           <p>Não há tarefas a exibir.</p>
-        ):(
+        ) : (
           <ul>
-            {tasks.map((task, index) => (
+            {tasks.map((task) => (
               <li
-                key={index}
+                key={task.id}
                 className={'task-${task.status.toLowerCase().replace(" ", "-")}'}
-                onClick={() => onSelectTask(task)} // Seleciona a tarefa ao clicar
               >
-                <h3>{task.title}</h3>
-                <p>{task.description}</p>
-                <p>
-                  <strong>Status:</strong> {task.status}
-                </p>
-                <p>
-                  <strong>Data:</strong> {task.dueDate}
-                </p>
-                <button onClick={() => onDeleteTask(index)}>Excluir</button>
+                <div onClick={() => onSelectTask(task)}>
+                  <h3>{task.title}</h3>
+                  <p>{task.description}</p>
+                  <p>
+                    <strong>Status:</strong> {task.status}
+                  </p>
+                  <p>
+                    <strong>Data:</strong> {task.dueDate}
+                  </p>
+                </div>
+                <button onClick={() => onDeleteTask(task.id)}>Excluir</button>
               </li>
             ))}
           </ul>
@@ -125,7 +119,14 @@ function AddTaskForm({ onAddTask }) {
       alert("Título e Data são obrigatórios.");
       return;
     }
-    onAddTask({ title, description, dueDate, status });
+    const newTask = {
+      id: Date.now().toString(),
+      title,
+      description,
+      dueDate,
+      status,
+    };
+    onAddTask(newTask);
     setTitle("");
     setDescription("");
     setDueDate("");
@@ -163,6 +164,39 @@ function AddTaskForm({ onAddTask }) {
   );
 }
 
+function TaskDetailModal({ task, onClose, onUpdateTask }) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  if (isEditing) {
+    return (
+      <EditTaskForm
+        task={task}
+        onSave={(updatedTask) => {
+          onUpdateTask(updatedTask);
+          setIsEditing(false);
+        }}
+        onCancel={() => setIsEditing(false)}
+      />
+    );
+  }
+
+  return (
+    <div className="task-detail-modal">
+      <div className="task-detail-content">
+        <h2>Detalhes da Tarefa</h2>
+        <h3>{task.title}</h3>
+        <p><strong>Descrição:</strong> {task.description}</p>
+        <p><strong>Status:</strong> {task.status}</p>
+        <p><strong>Data de Vencimento:</strong> {task.dueDate}</p>
+        <button onClick={onClose}>Fechar</button>
+        <button className="edit-button" onClick={() => setIsEditing(true)}>
+          ✏️ Editar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function EditTaskForm({ task, onSave, onCancel }) {
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
@@ -171,8 +205,7 @@ function EditTaskForm({ task, onSave, onCancel }) {
 
   const handleSave = (e) => {
     e.preventDefault();
-    const updatedTask = { ...task, title, description, dueDate, status, isEditing: false };
-    onSave(updatedTask);
+    onSave({ ...task, title, description, dueDate, status });
   };
 
   return (
