@@ -85,7 +85,11 @@ function TaskFilterAndList({
             {tasks.map((task) => (
               <li
                 key={task.id}
+<<<<<<< HEAD
                 className={`task-${task.status.toLowerCase().replace(" ", "-")}`}
+=======
+                className={'task-${task.status.toLowerCase().replace(" ", "-")}'}
+>>>>>>> origin/Delete
               >
                 <div onClick={() => onSelectTask(task)}>
                   <h3>{task.title}</h3>
@@ -240,4 +244,8 @@ function EditTaskForm({ task, onSave, onCancel }) {
   );
 }
 
+<<<<<<< HEAD
 export default App;
+=======
+export default App;
+>>>>>>> origin/Delete
